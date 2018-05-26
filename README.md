@@ -54,7 +54,7 @@ npm i babel-plugin-transform-decorators-legacy babel-preset-stage-1 --save-dev
 
 * 实例演示
     * git clone git@github.com:Q-Angelo/react-cnode.git
-    * cd web_front_end_frame
+    * cd react-cnode
     * git checkout mobx 切换分支
     * npm i
     * npm run dev:client 开启测试环境 客户端代码
