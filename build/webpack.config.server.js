@@ -11,6 +11,9 @@ module.exports = {
     publicPath: '/public',
     libraryTarget: 'commonjs2' // 适用nodejs端
   },
+  resolve: {
+    extensions: ['.js', '.jsx']
+  },
   module: {
     rules: [
       {

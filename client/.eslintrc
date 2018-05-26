@@ -13,12 +13,16 @@
     "extends": "airbnb",
     "rules": {
         "semi": [0],
+        "no-console": [0],
+        "jsx-a11y/anchor-is-valid": [0],
         "react/jsx-filename-extension": [1, { "extensions": [".js", ".jsx"] }],
         "jsx": true,
+        "indent": ["error", 4, { "ImportDeclaration": "first" }],
         "react/jsx-indent": [
             "error",
-            4, {
-                "SwitchCase": 1
+            4,
+            {
+                "SwitchCase": 2
             }
         ],
         "import/no-unresolved": [0],

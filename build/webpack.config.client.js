@@ -2,6 +2,8 @@ const path = require('path')
 const HTMLPlugin = require('html-webpack-plugin')
 const webpack = require('webpack')
 
+console.log(process.env.NODE_ENV)
+
 const isDev = process.env.NODE_ENV === 'development'
 const config = {
   entry: {
@@ -12,7 +14,9 @@ const config = {
     path: path.join(__dirname, '../dist'),
     publicPath: '/public/'
   },
-  // extends: ['js', 'jsx'],
+  resolve: {
+    extensions: ['.js', '.jsx']
+  },
   module: {
     rules: [
       {
