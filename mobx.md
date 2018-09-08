@@ -174,8 +174,6 @@ class TopicList extends React.Component {
     }
 }
 
-export default TopicList;
-
 /**
  * react开发中有一个强烈的建议， 我们写的组件用到的props都要去声明它的类型，以防在写代码时候乱用props出现的一些问题。
  */
@@ -190,5 +188,8 @@ export default TopicList;
 TopicList.propTypes = {
     appState: PropTypes.instanceOf(AppState).isRequired,
 }
+
+export default TopicList;
+
 ```
 

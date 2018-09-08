@@ -2,14 +2,14 @@ const axios = require('axios')
 const path = require('path')
 const MemoryFs = require('memory-fs')
 const webpack = require('webpack')
-const ReactDomServer = require('react-dom/server')
-const serverConfig = require('../../build/webpack.config.server')
 const proxy = require('http-proxy-middleware')
+const serverConfig = require('../../build/webpack.config.server')
+const serverRender = require('./server-render')
 
 // 拿到template文件
 const getTemplate = () => {
   return new Promise((resolve, reject) => {
-    axios.get('http://localhost:8888/public/index.html')
+    axios.get('http://localhost:8888/public/server.ejs')
       .then(res => {
         resolve(res.data)
       })
@@ -27,12 +27,33 @@ const getTemplate = () => {
  * 5. memory-fs模块从内存里面读写文件
  */
 
+const NativeModule = require('module')
+const vm = require('vm')
+const getModuleFromString = (bundle, filename) => {
+  const m = { exports: {} }
+  /**
+     * module是node的原生模块，其中的wrap()方法是将我们传入的bundle进行包装，类似于下面这样
+     * `(function(exports, require, module, __filename, __dirname){ ...bundle code })`
+     */
+  const wrapper = NativeModule.wrap(bundle)
+  const script = new vm.Script(wrapper, {
+    filename: filename,
+    displayErrors: true
+  })
+
+  const result = script.runInThisContext()
+  result.call(m.exports, m.exports, require, m)
+
+  return m
+}
+
 const mfs = new MemoryFs()
 const serverCompiler = webpack(serverConfig)
 
 // 设置文件的读写从fs硬盘读写改变为内存mfs读写
 serverCompiler.outputFileSystem = mfs // 会将文件写入内存
-let serverBundle
+let serverBundle = {}
+
 serverCompiler.watch({}, (err, stats) => {
   if (err) {
     throw err
@@ -50,28 +71,30 @@ serverCompiler.watch({}, (err, stats) => {
 
   // 读取bundle, 注意此处读到的是string类型的内容，并不是我们在js里面可以直接使用容模块的内容
   const bundle = mfs.readFileSync(bundlePath, 'utf-8')
-
-  // 通过module.constructor构造方法创建一个新的module
-  const Module = module.constructor
-  const m = new Module()
   // 用module去解析javascript String的内容，它会给我们去生成一个新的模块
-  m._compile(bundle, 'server-entry.js') // 指定一个名字
+  const m = getModuleFromString(bundle, 'server-entry.js') // 指定一个名字
 
-  serverBundle = m.exports.default
+  serverBundle = m.exports
 })
 
 module.exports = app => {
   // 都在内存里面没有静态文件夹生成
-  app.use('/public', proxy({
+  app.use('/public/', proxy({
     target: 'http://localhost:8888'
   }))
 
   // 返回服务端渲染结果给浏览器端
-  app.get('*', (req, res) => {
-    getTemplate().then(template => {
-      const content = ReactDomServer.renderToString(serverBundle, 'utf-8')
+  app.get('*', (req, res, next) => {
+    if (!serverBundle) {
+      return res.send('waiting for compile, refresh later!')
+    }
 
-      res.send(template.replace('<!-- <app> -->', content))
+    getTemplate().then(template => {
+      return serverRender(serverBundle, template, req, res)
+    }).catch(err => {
+      console.log(err)
+
+      next(err)
     })
   })
 }

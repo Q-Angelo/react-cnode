@@ -1,40 +1,22 @@
 const path = require('path')
+const webpackMerge = require('webpack-merge')
+const baseConfig = require('./webpack.config.base')
+const webpack = require('webpack')
 
-module.exports = {
+module.exports = webpackMerge(baseConfig, {
   target: 'node',
   entry: {
     app: path.join(__dirname, '../client/server-entry.js')
   },
+  // 指定的一些包最终不打包到我们指定的js文件里
+  externals: Object.keys(require('../package.json').dependencies),
   output: {
     filename: 'server-entry.js',
-    path: path.join(__dirname, '../dist'),
-    publicPath: '/public',
     libraryTarget: 'commonjs2' // 适用nodejs端
   },
-  resolve: {
-    extensions: ['.js', '.jsx']
-  },
-  module: {
-    rules: [
-      {
-        enforce: 'pre',
-        test: /.(js|jsx)$/,
-        loader: 'eslint-loader',
-        exclude: [
-          path.resolve(__dirname, '../node_modules')
-        ]
-      },
-      {
-        test: /.jsx$/,
-        loader: 'babel-loader' // 编译出来为浏览器可以执行的ES5代码,babel-loader需要babel-core做为核心代码 npm i babel-loader babel-core -D
-      },
-      {
-        test: /.js$/,
-        loader: 'babel-loader',
-        exclude: [
-          path.join(__dirname, '../node_modules')
-        ]
-      }
-    ]
-  }
-}
+  plugins: [
+    new webpack.DefinePlugin({
+      'process.env.API_BASE': '"http://127.0.0.1:3333"'
+    })
+  ]
+})

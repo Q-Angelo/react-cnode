@@ -1,53 +1,32 @@
 const path = require('path')
 const HTMLPlugin = require('html-webpack-plugin')
 const webpack = require('webpack')
-
-console.log(process.env.NODE_ENV)
+const webpackMerge = require('webpack-merge')
+const baseConfig = require('./webpack.config.base')
 
 const isDev = process.env.NODE_ENV === 'development'
-const config = {
+const config = webpackMerge(baseConfig, {
   entry: {
     app: path.join(__dirname, '../client/app.js')
   },
   output: {
     filename: '[name].[hash].js',
-    path: path.join(__dirname, '../dist'),
-    publicPath: '/public/'
-  },
-  resolve: {
-    extensions: ['.js', '.jsx']
-  },
-  module: {
-    rules: [
-      {
-        enforce: 'pre',
-        test: /.(js|jsx)$/,
-        loader: 'eslint-loader',
-        exclude: [
-          path.resolve(__dirname, '../node_modules')
-        ]
-      },
-      {
-        test: /.jsx$/,
-        loader: 'babel-loader' // 编译出来为浏览器可以执行的ES5代码,babel-loader需要babel-core做为核心代码 npm i babel-loader babel-core -D
-      },
-      {
-        test: /.js$/,
-        loader: 'babel-loader',
-        exclude: [
-          path.join(__dirname, '../node_modules')
-        ]
-      }
-    ]
+    path: path.join(__dirname, '../dist')
   },
   plugins: [
     new HTMLPlugin({
       template: path.join(__dirname, '../client/template.html')
+    }),
+
+    new HTMLPlugin({
+      template: '!!ejs-compiled-loader!' + path.join(__dirname, '../client/server.template.ejs'),
+      filename: 'server.ejs'
     })
   ]
-}
+})
 
 if (isDev) {
+  config.devtool = '#cheap-module-eval-source-map'
   config.entry = {
     app: [
       'react-hot-loader/patch',
@@ -61,14 +40,17 @@ if (isDev) {
   config.devServer = {
     host: '0.0.0.0',
     port: '8888',
-    contentBase: path.join(__dirname, '../dist'),
+    // contentBase: path.join(__dirname, '../dist'),
     hot: true,
     overlay: {
       errors: true
     },
-    publicPath: '/public',
+    publicPath: '/public/',
     historyApiFallback: {
       index: '/public/index.html'
+    },
+    proxy: {
+      '/api': 'http://localhost:3333'
     }
   }
 
